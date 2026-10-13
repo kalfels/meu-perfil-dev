@@ -75,7 +75,7 @@ Antes de iniciar, certifique-se de ter instalado:
 1. Clone o repositório:
 
 ```bash
-git clone https://github.com/seu-usuario/meu-perfil-dev.git
+git clone https://github.com/kalfels/meu-perfil-dev.git
 cd meu-perfil-dev
 ```
 
