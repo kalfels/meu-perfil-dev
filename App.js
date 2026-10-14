@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
+  Animated, 
+  Easing,
   Alert,
   Image,
   Linking,
@@ -8,14 +10,17 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { Ionicons } from '@expo/vector-icons';
 
 import Header from "./components/Header";
 
 const COLORS = {
   primary: "#147db3",
+  secondary: "#000000",
   primaryDark: "#0d5277",
   background: "#eef8ff",
   surface: "#ffffff",
@@ -27,6 +32,7 @@ const COLORS = {
   successSoft: "#e3f7ee",
   neutral: "#8a9bb0",
   neutralSoft: "#edf1f5",
+  delete: "#e74c3c",
 };
 
 const PROFILE = {
@@ -40,22 +46,71 @@ const PROFILE = {
     "Desenvolvedor apaixonado por tecnologia e por criar experiências digitais simples e acessíveis. Estou sempre aprendendo e transformando ideias em aplicativos.",
 };
 
-const SKILLS = ["JavaScript", "React Native", "Git & GitHub", "UI/UX Design", "HTML & CSS"];
+const SKILLS = ["JavaScript", "React Native", "Git & GitHub", "UI/UX Design", "HTML & CSS", "Expo", "Tailwind CSS", "TypeScript", "Fastlane"];
+
+const LIMITE_RECOMENDACOES = 10;
+
+const MAX_LENGTH_MESSAGE = 80;
 
 export default function App() {
-  const [likes, setLikes] = useState(0);
+  //hooks useStates
+  const [recomendations, setRecomendations] = useState(0);
+  const [showSkills, setShowSkills] = useState(true); // true = começa aberto
+  const [available, setAvailable] = useState(PROFILE.available);
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]); //array para os recados
 
-  const availabilityLabel = PROFILE.available
+  const availabilityLabel = available 
     ? "Disponível para projetos"
     : "Indisponível para projetos";
 
-  const handleLike = () => setLikes((prev) => prev + 1);
+  //Animação para a bolinha de disponibilidade de projetos
+  //Hook useRef
+  const blink = useRef(new Animated.Value(1)).current;
+
+  //hook useEffect
+  useEffect(() => {
+    // Só pisca quando disponível; indisponível fica fixo
+    if (!available) {
+      blink.setValue(1);
+      return;
+    }
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(blink, {
+          toValue: 0.2,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(blink, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    loop.start();
+    return () => loop.stop(); // limpa ao desmontar ou mudar o status
+  }, [available, blink]);
 
   const handleContact = () => {
     Linking.openURL(`mailto:${PROFILE.email}`).catch(() =>
       Alert.alert("Contato", `Envie um e-mail para ${PROFILE.email}`)
     );
   };
+
+  const handleSendMessage = () => {
+    if(message.trim() === "") { //validar mensagem vazia
+      Alert.alert("Atenção", "Escreva sua mensagem!");
+      return;
+    }
+    setMessages([...messages, { id: Date.now(), texto: message }]); //adiciona mensagem ao array com identificador unico
+    setMessage(""); //limpa o campo da mensagem.
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -67,6 +122,8 @@ export default function App() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+
+        {/* Seção do Profile */}
         <View style={styles.profileHeader}>
           <Image
             source={{ uri: PROFILE.avatarUrl }}
@@ -77,52 +134,135 @@ export default function App() {
           <Text style={styles.role}>{PROFILE.role}</Text>
           <Text style={styles.location}>{PROFILE.city}</Text>
 
-          <View style={[styles.badge, !PROFILE.available && styles.badgeOff]}>
-            <View
-              style={[styles.badgeDot, { backgroundColor: PROFILE.available ? COLORS.success : COLORS.neutral }]}
+          <View style={[styles.badge, !available && styles.badgeOff]}>
+            <Animated.View
+              style={[styles.badgeDot, { 
+                backgroundColor: available ? COLORS.success : COLORS.neutral,
+                opacity: blink,
+              }]}
             />
-            <Text style={[styles.badgeText, !PROFILE.available && styles.badgeTextOff]}>
+            <Text style={[styles.badgeText, !available && styles.badgeTextOff]}>
               {availabilityLabel}
             </Text>
           </View>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Sobre mim</Text>
+          <Text style={styles.sectionTitle}>🧔🏻‍♂️ Sobre mim</Text>
           <Text style={styles.bio}>{PROFILE.bio}</Text>
         </View>
 
+        {/* Seção de Skills */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Habilidades</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showSkills }}
+            onPress={() => setShowSkills((prev) => !prev)}
+            style={styles.sectionHeader}
+            hitSlop={8}>
+            <Text style={styles.sectionTitle}>📚 Habilidades</Text>
+            <Ionicons
+              name={showSkills ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={COLORS.neutral}
+            />
+          </Pressable>
+
+          {showSkills && (
           <View style={styles.skillsWrap}>
             {SKILLS.map((skill) => (
-              <View key={skill} style={styles.skill}>
+              //key={Math.random}
+              <View key={skill} style={styles.skill}>  
                 <Text style={styles.skillText}>{skill}</Text>
               </View>
             ))}
           </View>
+          )}
         </View>
 
+        {/* Seção de Botões Recomandações e Disponibilidade */}
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
-            onPress={handleLike}
+            onPress={() => 
+              recomendations < LIMITE_RECOMENDACOES
+              ? setRecomendations(recomendations + 1)
+              : Alert.alert('Limite atingido', `Você chegou ao limite de ${LIMITE_RECOMENDACOES} recomendações.`)}
             style={({ pressed }) => [styles.likeButton, pressed && styles.likeButtonPressed]}
           >
-            <Text style={styles.likeButtonText}>Curtir</Text>
+            <Text style={styles.likeButtonText}>
+              {recomendations} {recomendations === 1 ? 'recomendação' : 'recomendações'}
+            </Text>
           </Pressable>
-          <Text style={styles.likesText}>
-            {likes} {likes === 1 ? "curtida" : "curtidas"}
-          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setAvailable((prev) => !prev)}
+            style={({ pressed }) => [
+              styles.likeButton,
+              styles.outlineButton,
+              { borderColor: available ? COLORS.danger : COLORS.success },
+              pressed && styles.likeButtonPressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.likeButtonText,
+                { color: available ? COLORS.danger : COLORS.success },
+              ]}
+            >
+              {available ? 'Tornar indisponível' : 'Tornar disponível'}
+            </Text>
+          </Pressable>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={handleContact}
-          style={({ pressed }) => [styles.contactButton, pressed && styles.contactButtonPressed]}
-        >
-          <Text style={styles.contactButtonText}>Entre em contato</Text>
-        </Pressable>
+        {/* Seção do TextInput e Contador e Botão Enviar recado */}
+        <View>
+          <TextInput
+            value={message}
+            onChangeText={setMessage}
+            placeholder="Deixe uma mensagem"
+            placeholderTextColor={COLORS.textMuted}
+            multiline={true}
+            numberOfLines={3}
+            maxLength={MAX_LENGTH_MESSAGE}
+            style={styles.textInput}
+          />
+          <Text style={styles.counterText}>
+            {message.length}/{MAX_LENGTH_MESSAGE}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleSendMessage}
+            style={({ pressed }) => [styles.contactButton, { marginTop: 12 }, pressed && styles.contactButtonPressed]}
+          >
+            <Text style={styles.contactButtonText}>Enviar recado</Text>
+          </Pressable>
+        </View>
+
+        {/* Seção Mural de Recados */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>
+            💬 Mural de recados ({messages.length})
+          </Text>
+
+          {messages.length === 0 ? (
+            <Text style={styles.bio}>Nenhum recado ainda.</Text>
+          ) : (
+            messages.map((message) => (
+              <View key={message.id} style={styles.messageItem}>
+                <Text style={styles.messageText}>{message.texto}</Text>
+                {/* Desafio Extra: Apagar com filter */}
+                <Pressable
+                  onPress={() => setMessages(messages.filter((r) => r.id !== message.id))}
+                  style={styles.deleteButoton}
+                >
+                  <Ionicons name="trash-outline" size={18} color={COLORS.delete}/>
+                </Pressable>
+              </View>
+            ))
+          )}
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -150,7 +290,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    borderWidth: 3,
+    borderWidth: 5,
     borderColor: COLORS.surface,
     marginBottom: 14,
   },
@@ -205,13 +345,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 18,
     backgroundColor: COLORS.surface,
-    shadowColor: "#000",
+    shadowColor: COLORS.secondary,
     shadowOpacity: 0.05,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   sectionTitle: {
+    marginTop: 10,
     marginBottom: 12,
     color: COLORS.textStrong,
     fontSize: 18,
@@ -228,6 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+    marginTop: 10
   },
   skill: {
     borderRadius: 16,
@@ -239,6 +381,11 @@ const styles = StyleSheet.create({
     color: COLORS.chipText,
     fontSize: 14,
     fontWeight: "600",
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between', // chevron no canto direito do card
   },
 
   /* Ações */
@@ -268,18 +415,61 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
+  outlineButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+  },
+
+  /* Message */
+  textInput: {
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: COLORS.surface,
+    height: 80,               // Garante espaço visual para as 3 linhas
+    textAlignVertical: 'top',
+    marginTop: 10,
+  },
+  counterText: {
+    fontSize: 12,             // Estilo "small"
+    color: COLORS.textMuted,
+    textAlign: 'right',       // Alinhado à direita abaixo do campo
+    marginTop: 2,
+  },
+  messageItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: COLORS.neutralSoft,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  messageText: {
+    color: COLORS.textStrong,
+    fontSize: 14,
+    flex: 1,
+    marginRight: 8,
+  },
+  deleteButton: {
+    padding: 6,
+  },
+
+  /* Contact */
   contactButton: {
     width: "100%",
     alignItems: "center",
     paddingVertical: 16,
     borderRadius: 14,
     backgroundColor: COLORS.primary,
+    marginBottom: 16,
   },
   contactButtonPressed: {
     backgroundColor: COLORS.primaryDark,
   },
   contactButtonText: {
-    color: "#ffffff",
+    color: COLORS.surface,
     fontSize: 16,
     fontWeight: "700",
   },

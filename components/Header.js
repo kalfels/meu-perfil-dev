@@ -21,6 +21,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   title: {
+    marginTop: 18,
     color: "#ffffff",
     fontSize: 18,
     fontWeight: "700",
