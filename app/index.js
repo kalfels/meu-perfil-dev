@@ -16,7 +16,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from '@expo/vector-icons';
 
-import Header from "./components/Header";
+import Header from "../components/Header";
 
 const COLORS = {
   primary: "#147db3",
@@ -68,7 +68,7 @@ export default function App() {
   //Hook useRef
   const blink = useRef(new Animated.Value(1)).current;
 
-  //hook useEffect
+  //hook useEffect 
   useEffect(() => {
     // Só pisca quando disponível; indisponível fica fixo
     if (!available) {
@@ -96,12 +96,6 @@ export default function App() {
     loop.start();
     return () => loop.stop(); // limpa ao desmontar ou mudar o status
   }, [available, blink]);
-
-  const handleContact = () => {
-    Linking.openURL(`mailto:${PROFILE.email}`).catch(() =>
-      Alert.alert("Contato", `Envie um e-mail para ${PROFILE.email}`)
-    );
-  };
 
   const handleSendMessage = () => {
     if(message.trim() === "") { //validar mensagem vazia
