@@ -7,7 +7,7 @@ export default function Layout() {
         <SafeAreaProvider>
             <Stack screenOptions={{
                 headerStyle: {
-                    backgroundColor: "#407C2A",
+                    backgroundColor: "#147db3",
                 },
                 headerTintColor: "#fff",
                 headerTitleStyle: {
@@ -16,6 +16,9 @@ export default function Layout() {
             }}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="about" options={{ title: "Sobre o App" }} />
+            <Stack.Screen name="recados" options={{ title: "Recados" }} />
+            <Stack.Screen name="habilidades" options={{ title: "Habilidades" }} />
+            <Stack.Screen name="habilidades/[id]" />
             </Stack>
         </SafeAreaProvider>
     );

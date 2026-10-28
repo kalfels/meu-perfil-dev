@@ -1,9 +1,15 @@
 import { StyleSheet, Text, View } from "react-native";
 
-export default function Header({ title = "Perfil" }) {
+export default function Header({ title = "Perfil", centered = false }) {
   return (
     <View style={styles.container} accessibilityRole="header">
-      <Text style={styles.title}>{title}</Text>
+      {centered ? (
+        <View style={styles.centeredTitleContainer}>
+          <Text style={[styles.title, styles.titleCentered]}>{title}</Text>
+        </View>
+      ) : (
+        <Text style={styles.title}>{title}</Text>
+      )}
     </View>
   );
 }
@@ -25,5 +31,13 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 18,
     fontWeight: "700",
+  },
+  centeredTitleContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  titleCentered: {
+    marginTop: 0,
+    textAlign: "center",
   },
 });

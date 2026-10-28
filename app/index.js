@@ -4,17 +4,15 @@ import {
   Easing,
   Alert,
   Image,
-  Linking,
   Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Ionicons } from '@expo/vector-icons';
+import { router } from "expo-router";
 
 import Header from "../components/Header";
 
@@ -27,12 +25,10 @@ const COLORS = {
   textStrong: "#16324f",
   textMuted: "#52677c",
   chip: "#e4f4ff",
-  chipText: "#176b9c",
   success: "#2e9d6a",
   successSoft: "#e3f7ee",
   neutral: "#8a9bb0",
   neutralSoft: "#edf1f5",
-  delete: "#e74c3c",
 };
 
 const PROFILE = {
@@ -50,15 +46,10 @@ const SKILLS = ["JavaScript", "React Native", "Git & GitHub", "UI/UX Design", "H
 
 const LIMITE_RECOMENDACOES = 10;
 
-const MAX_LENGTH_MESSAGE = 80;
-
 export default function App() {
   //hooks useStates
   const [recomendations, setRecomendations] = useState(0);
-  const [showSkills, setShowSkills] = useState(true); // true = começa aberto
   const [available, setAvailable] = useState(PROFILE.available);
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]); //array para os recados
 
   const availabilityLabel = available 
     ? "Disponível para projetos"
@@ -96,15 +87,6 @@ export default function App() {
     loop.start();
     return () => loop.stop(); // limpa ao desmontar ou mudar o status
   }, [available, blink]);
-
-  const handleSendMessage = () => {
-    if(message.trim() === "") { //validar mensagem vazia
-      Alert.alert("Atenção", "Escreva sua mensagem!");
-      return;
-    }
-    setMessages([...messages, { id: Date.now(), texto: message }]); //adiciona mensagem ao array com identificador unico
-    setMessage(""); //limpa o campo da mensagem.
-  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -146,33 +128,32 @@ export default function App() {
           <Text style={styles.bio}>{PROFILE.bio}</Text>
         </View>
 
-        {/* Seção de Skills */}
-        <View style={styles.card}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ expanded: showSkills }}
-            onPress={() => setShowSkills((prev) => !prev)}
-            style={styles.sectionHeader}
-            hitSlop={8}>
-            <Text style={styles.sectionTitle}>📚 Habilidades</Text>
-            <Ionicons
-              name={showSkills ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={COLORS.neutral}
-            />
-          </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/recados")}
+          style={({ pressed }) => [
+            styles.recadosButton,
+            pressed && styles.recadosButtonPressed,
+          ]}
+        >
+          <Text style={styles.recadosButtonText}>Ver Recados</Text>
+        </Pressable>
 
-          {showSkills && (
-          <View style={styles.skillsWrap}>
-            {SKILLS.map((skill) => (
-              //key={Math.random}
-              <View key={skill} style={styles.skill}>  
-                <Text style={styles.skillText}>{skill}</Text>
-              </View>
-            ))}
-          </View>
-          )}
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            router.push({
+              pathname: "/habilidades",
+              params: { skills: JSON.stringify(SKILLS) },
+            })
+          }
+          style={({ pressed }) => [
+            styles.recadosButton,
+            pressed && styles.recadosButtonPressed,
+          ]}
+        >
+          <Text style={styles.recadosButtonText}>Ver Habilidades</Text>
+        </Pressable>
 
         {/* Seção de Botões Recomandações e Disponibilidade */}
         <View style={styles.actions}>
@@ -207,54 +188,6 @@ export default function App() {
               {available ? 'Tornar indisponível' : 'Tornar disponível'}
             </Text>
           </Pressable>
-        </View>
-
-        {/* Seção do TextInput e Contador e Botão Enviar recado */}
-        <View>
-          <TextInput
-            value={message}
-            onChangeText={setMessage}
-            placeholder="Deixe uma mensagem"
-            placeholderTextColor={COLORS.textMuted}
-            multiline={true}
-            numberOfLines={3}
-            maxLength={MAX_LENGTH_MESSAGE}
-            style={styles.textInput}
-          />
-          <Text style={styles.counterText}>
-            {message.length}/{MAX_LENGTH_MESSAGE}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleSendMessage}
-            style={({ pressed }) => [styles.contactButton, { marginTop: 12 }, pressed && styles.contactButtonPressed]}
-          >
-            <Text style={styles.contactButtonText}>Enviar recado</Text>
-          </Pressable>
-        </View>
-
-        {/* Seção Mural de Recados */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            💬 Mural de recados ({messages.length})
-          </Text>
-
-          {messages.length === 0 ? (
-            <Text style={styles.bio}>Nenhum recado ainda.</Text>
-          ) : (
-            messages.map((message) => (
-              <View key={message.id} style={styles.messageItem}>
-                <Text style={styles.messageText}>{message.texto}</Text>
-                {/* Desafio Extra: Apagar com filter */}
-                <Pressable
-                  onPress={() => setMessages(messages.filter((r) => r.id !== message.id))}
-                  style={styles.deleteButoton}
-                >
-                  <Ionicons name="trash-outline" size={18} color={COLORS.delete}/>
-                </Pressable>
-              </View>
-            ))
-          )}
         </View>
 
       </ScrollView>
@@ -357,29 +290,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23,
   },
-
-  /* Habilidades */
-  skillsWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 10
+  recadosButton: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 16,
+    marginBottom: 16,
+    borderRadius: 14,
+    backgroundColor: COLORS.primary,
   },
-  skill: {
-    borderRadius: 16,
-    backgroundColor: COLORS.chip,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  recadosButtonPressed: {
+    backgroundColor: COLORS.primaryDark,
   },
-  skillText: {
-    color: COLORS.chipText,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between', // chevron no canto direito do card
+  recadosButtonText: {
+    color: COLORS.surface,
+    fontSize: 16,
+    fontWeight: "700",
   },
 
   /* Ações */
@@ -414,57 +339,4 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
 
-  /* Message */
-  textInput: {
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: COLORS.surface,
-    height: 80,               // Garante espaço visual para as 3 linhas
-    textAlignVertical: 'top',
-    marginTop: 10,
-  },
-  counterText: {
-    fontSize: 12,             // Estilo "small"
-    color: COLORS.textMuted,
-    textAlign: 'right',       // Alinhado à direita abaixo do campo
-    marginTop: 2,
-  },
-  messageItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: COLORS.neutralSoft,
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  messageText: {
-    color: COLORS.textStrong,
-    fontSize: 14,
-    flex: 1,
-    marginRight: 8,
-  },
-  deleteButton: {
-    padding: 6,
-  },
-
-  /* Contact */
-  contactButton: {
-    width: "100%",
-    alignItems: "center",
-    paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: COLORS.primary,
-    marginBottom: 16,
-  },
-  contactButtonPressed: {
-    backgroundColor: COLORS.primaryDark,
-  },
-  contactButtonText: {
-    color: COLORS.surface,
-    fontSize: 16,
-    fontWeight: "700",
-  },
 });
